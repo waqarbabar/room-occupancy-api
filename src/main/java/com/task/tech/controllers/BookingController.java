@@ -19,9 +19,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.validation.Valid;
 import java.util.List;
 
-import static com.task.tech.controllers.BookingEstimationController.TAG_API;
+import static com.task.tech.controllers.BookingController.TAG_API;
 
 @Slf4j
 @SwaggerDefinition(
@@ -33,7 +34,7 @@ import static com.task.tech.controllers.BookingEstimationController.TAG_API;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/booking")
-public class BookingEstimationController {
+public class BookingController {
 
     public static final String TAG_API = "Room Occupancy API";
     private final BookingService bookingService;
@@ -45,8 +46,8 @@ public class BookingEstimationController {
             @ApiResponse(code = 400, message = "Bad request"),
             @ApiResponse(code = 500, message = "Internal Server Error"),
     })
-    @GetMapping("/estimates/availableRoomCount/economy/{economyRooms}/premium/{premiumRooms}")
-    public BookingEstimation getBookingEstimation(RoomAvailability roomAvailability) {
+    @GetMapping("/estimates")
+    public BookingEstimation getBookingEstimation(@Valid RoomAvailability roomAvailability) {
         log.info("received request to get booking estimations for available rooms={}", roomAvailability);
         BookingEstimation bookingEstimates = this.bookingService.getBookingEstimates(roomAvailability);
         log.info("completed request to get booking estimations with details={}", bookingEstimates);
