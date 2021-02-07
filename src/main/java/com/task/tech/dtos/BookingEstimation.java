@@ -1,9 +1,14 @@
 package com.task.tech.dtos;
 
-import lombok.Data;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
-@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Getter
 public class BookingEstimation {
-    private RoomBooking premiumBooking;
-    private RoomBooking economyBooking;
+
+    private RoomTierBooking premiumTier;
+    private RoomTierBooking economyTier;
 }

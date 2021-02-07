@@ -2,3 +2,6 @@ logging:
   level:
     org.apache.http: DEBUG
     com.task.tech: DEBUG
+
+booking:
+  premium-threshold: 100

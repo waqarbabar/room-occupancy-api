@@ -2,10 +2,12 @@ package com.task.tech.services.impl;
 
 import com.task.tech.dtos.BookingEstimation;
 import com.task.tech.dtos.RoomAvailability;
-import com.task.tech.dtos.RoomBooking;
 import com.task.tech.exceptions.EntityNotFoundException;
+import com.task.tech.services.BookingEstimationService;
 import com.task.tech.services.BookingService;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -20,10 +22,15 @@ import static org.springframework.util.CollectionUtils.isEmpty;
 @Service
 public class BookingServiceImpl implements BookingService {
 
-    private static final Integer PREMIUM_MINIMUM_THRESHOLD = 100;
-    private final List<Integer> guestRates;
+    private final BookingEstimationService bookingEstimationService;
 
-    public BookingServiceImpl() {
+    private final List<Integer> guestRates;
+    @Setter
+    @Value("${booking.premium-threshold}")
+    private Integer premiumMinimumThreshold;
+
+    public BookingServiceImpl(BookingEstimationService bookingEstimationService) {
+        this.bookingEstimationService = bookingEstimationService;
         this.guestRates = new ArrayList<>();
     }
 
@@ -38,58 +45,22 @@ public class BookingServiceImpl implements BookingService {
         this.validate();
         Map<Boolean, List<Integer>> sortedRatesMap = getSortedRates();
         List<Integer> premiumRates = sortedRatesMap.get(true);
+        log.debug("total premium rates={}", premiumRates.size());
         List<Integer> economyRates = sortedRatesMap.get(false);
-        return getBookingEstimation(roomAvailability, premiumRates, economyRates);
-    }
-
-    private BookingEstimation getBookingEstimation(RoomAvailability roomAvailability, List<Integer> premiumRates, List<Integer> economyRates) {
-        BookingEstimation bookingEstimationDTO = new BookingEstimation();
-        RoomBooking premiumBooking = getInitialEstimate(roomAvailability.getPremiumRoomCount(), premiumRates);
-        RoomBooking economyBooking = getInitialEstimate(roomAvailability.getEconomyRoomCount(), economyRates);
-        this.processUpgrade(premiumBooking, economyBooking, roomAvailability, economyRates);
-        bookingEstimationDTO.setEconomyBooking(economyBooking);
-        bookingEstimationDTO.setPremiumBooking(premiumBooking);
-        return bookingEstimationDTO;
-    }
-
-    private void processUpgrade(RoomBooking premiumBooking, RoomBooking economyBooking, RoomAvailability roomAvailability, List<Integer> economyRates) {
-        int premiumRoomLeft = roomAvailability.getPremiumRoomCount() - premiumBooking.getUsage();
-        log.debug("available {} premium room(s) for upgrade", premiumRoomLeft);
-        int upgradeCandidateCount = economyRates.size() - economyBooking.getUsage();
-
-        if (premiumRoomLeft == 0 || upgradeCandidateCount == 0) {
-            log.debug("no upgrade possible, continuing with the initial estimation");
-            return;
-        }
-
-        for (int i = 0; (i < premiumRoomLeft && i < upgradeCandidateCount && i < economyRates.size()); i++) {
-            Integer currentRate = economyRates.get(i);
-            premiumBooking.bookRoomWithAmount(currentRate);
-            if (economyBooking.getUsage() > 0) {
-                economyBooking.cancelBookingWithAmount(currentRate);
-                if (economyRates.size() > economyBooking.getUsage() + i) {
-                    economyBooking.bookRoomWithAmount(economyRates.get(economyBooking.getUsage() + i + 1));
-                }
-            }
-        }
+        log.debug("total economy rates={}", economyRates.size());
+        return bookingEstimationService.getBookingEstimation(roomAvailability, premiumRates, economyRates);
     }
 
     private Map<Boolean, List<Integer>> getSortedRates() {
         return guestRates
                 .stream()
                 .sorted(Comparator.reverseOrder())
-                .collect(partitioningBy(offeredRate -> offeredRate >= PREMIUM_MINIMUM_THRESHOLD));
-    }
-
-    private RoomBooking getInitialEstimate(Integer availableRoomCount, List<Integer> rates) {
-        RoomBooking estimation = new RoomBooking();
-        rates.stream().limit(availableRoomCount).forEach(estimation::bookRoomWithAmount);
-        return estimation;
+                .collect(partitioningBy(offeredRate -> offeredRate >= premiumMinimumThreshold));
     }
 
     private void validate() {
         if (isEmpty(guestRates)) {
-            throw new EntityNotFoundException("No estimates found because customer rates does not exist.");
+            throw new EntityNotFoundException("no estimates found because customer rates does not exist");
         }
     }
 }

@@ -6,6 +6,7 @@ import javax.validation.constraints.NotNull;
 
 @Value
 public class RoomAvailability {
+
     @NotNull
     Integer economyRoomCount;
     @NotNull
