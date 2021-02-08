@@ -31,11 +31,11 @@ public class RoomTierBooking {
         }
     }
 
-    public void updateTierBookingAfterUpgrade(Integer oldRate, Integer totalUpgradesCount, List<Integer> rates) {
+    public void updateTierBookingAfterUpgrade(Integer oldRate, Integer totalUpgrades, List<Integer> currentTierRates) {
         if (this.isUpdatePossible()) {
             this.vacateRoomWithAmount(oldRate);
-            int totalBookingCount = this.usage + totalUpgradesCount;
-            Integer nextAvailableRate = getNextUnusedRate(totalBookingCount, rates);
+            int currentTierBookingCount = this.usage + totalUpgrades;
+            Integer nextAvailableRate = getNextUnusedRate(currentTierBookingCount, currentTierRates);
             if (nonNull(nextAvailableRate)) {
                 this.bookRoomWithAmount(nextAvailableRate);
             }
@@ -46,14 +46,14 @@ public class RoomTierBooking {
         return this.usage > 0;
     }
 
-    private Integer getNextUnusedRate(int totalBookingCount, List<Integer> rates) {
-        if (isNextRateAvailable(rates.size(), totalBookingCount)) {
-            return rates.get(totalBookingCount + 1);
+    private Integer getNextUnusedRate(int currentTierBookingCount, List<Integer> currentTierRates) {
+        if (isNextRateAvailable(currentTierRates.size(), currentTierBookingCount)) {
+            return currentTierRates.get(currentTierBookingCount + 1);
         }
         return null;
     }
 
-    private boolean isNextRateAvailable(int rateCount, int totalBookingCount) {
-        return rateCount > totalBookingCount;
+    private boolean isNextRateAvailable(int totalCurrentTierRates, int currentTierBookingCount) {
+        return totalCurrentTierRates > currentTierBookingCount;
     }
 }
